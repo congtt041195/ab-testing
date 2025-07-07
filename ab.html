@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Chosen Palette: Vibrant & Professional -->
+    <!-- Application Structure Plan: The SPA is structured as a narrative scroll. It starts with high-level KPIs to hook the user. It then delves into a comparative analysis of projects, followed by a methodological breakdown of test duration and complexity. It concludes with actionable recommendations. This structure guides the user from a broad overview to specific insights, making the complex data more digestible and engaging than a standard report layout. -->
+    <!-- Visualization & Content Choices:
+        - Total Tests/Avg Duration/Total DAU -> Goal: Inform -> Single Big Number -> Justification: Provides immediate, high-impact overview. Method: Styled HTML/Tailwind.
+        - Experiments per Project -> Goal: Compare -> Horizontal Bar Chart -> Justification: Best for comparing categories with long names and quickly identifying top contributors. Library: Chart.js (Canvas).
+        - Test Duration Distribution -> Goal: Organize/Compare -> Vertical Bar Chart -> Justification: Clearly shows the distribution across ordered time-based categories. Library: Chart.js (Canvas).
+        - Variant Complexity Distribution -> Goal: Show Composition -> Donut Chart -> Justification: Excellent for showing simple, powerful part-to-whole relationships (84% vs others). Library: Chart.js (Canvas).
+        - Recommendations -> Goal: Inform/Organize -> Styled List -> Justification: Clear, scannable format for actionable advice. Method: Styled HTML/Tailwind with Unicode icons.
+        - Project Data Table -> Goal: Inform/Compare/Organize -> Interactive Table with Heatmap -> Justification: Presents comprehensive project-level metrics in a structured, sortable format. Heatmap highlights value intensity for quick visual scanning. Method: HTML Table with JavaScript for sorting and heatmap styling.
+        - Frequency and Colap Rate Combo Chart -> Goal: Relationships/Compare -> Combo Bar/Line Chart -> Justification: Effectively shows two related metrics (days and percentage) on a single x-axis for each project, allowing for visual correlation. Library: Chart.js (Canvas).
+        - Performance by Variant Count Chart -> Goal: Compare/Relationships -> Grouped Bar Chart -> Justification: Compares two key performance metrics across different variant configurations, showing potential trade-offs or optimal setups. Library: Chart.js (Canvas).
+        - Performance by Duration Group Chart -> Goal: Compare/Relationships -> Grouped Bar Chart -> Justification: Compares two key performance metrics across different test duration groups, revealing optimal testing lengths for significant results. Library: Chart.js (Canvas).
+        - Project Performance Table -> Goal: Inform/Compare/Organize -> Interactive Table -> Justification: Provides a detailed, sortable view of project-level performance metrics (win rates, uplift) to identify successful optimization efforts. Method: HTML Table with JavaScript for sorting.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <title>Infographic Tương tác: Thực trạng A/B Testing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #334155;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 20vh; /* Reduced from 40vh */
+            max-height: 200px; /* Reduced from 400px */
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 200px; /* Reduced from 400px */
+            }
+        }
+        .kpi-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1rem; /* Reduced from 1.5rem */
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .section-title {
+            color: #003f5c;
+        }
+        .accent-color-1 { color: #58508d; }
+        .accent-color-2 { color: #bc5090; }
+        .accent-color-3 { color: #ff6361; }
+        .accent-color-4 { color: #ffa600; }
+        .table-container {
+            overflow-x: auto; /* Enable horizontal scrolling for small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.25rem; /* leading-5 */
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 0.5rem; /* py-3 px-2 */
+            border-bottom: 1px solid #e2e8f0; /* border-slate-200 */
+            text-align: left;
+            white-space: nowrap; /* Prevent wrapping in cells */
+        }
+        .data-table th {
+            background-color: #f8fafc; /* slate-50 */
+            font-weight: 600; /* font-semibold */
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table tbody tr:hover {
+            background-color: #f0f4f8; /* blue-50 */
+        }
+        .data-table th.asc::after { content: ' \2191'; } /* Up arrow */
+        .data-table th.desc::after { content: ' \2193'; } /* Down arrow */
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold section-title mb-3">Thực Trạng A/B Testing Ikame Games H1-2025</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto">Báo cáo về tỉ lệ thực hiện AB testing trên các dự án vận hành của Ikame Games 2025.</p>
+        </header>
+
+        <section id="kpis" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Tổng Số Thử Nghiệm</h3>
+                <p class="text-5xl font-bold accent-color-1">269</p>
+                <p class="text-sm text-slate-500 mt-2">thử nghiệm đã được thực hiện</p>
+            </div>
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Thời Gian Testing Trung Bình</h3>
+                <p class="text-5xl font-bold accent-color-2">9</p>
+                <p class="text-sm text-slate-500 mt-2">ngày</p>
+            </div>
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Tần Suất Thực Nghiệm Trung Bình</h3>
+                <p class="text-5xl font-bold accent-color-3">6-7</p>
+                <p class="text-sm text-slate-500 mt-2">ngày</p>
+            </div>
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Tỉ Lệ Day Colap Thực Nghiệm</h3>
+                <p class="text-5xl font-bold accent-color-4">30%</p>
+                <p class="text-sm text-slate-500 mt-2"></p>
+            </div>
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Tỉ Lệ Thực Nghiệm Win Significant</h3>
+                <p class="text-5xl font-bold accent-color-1">6%</p>
+                <p class="text-sm text-slate-500 mt-2"></p>
+            </div>
+            <div class="kpi-card">
+                <h3 class="text-base font-semibold text-slate-500 mb-2">Tỉ Lệ Thực Nghiệm Win by Uplift LTV >= 5%</h3>
+                <p class="text-5xl font-bold accent-color-2">26%</p>
+                <p class="text-sm text-slate-500 mt-2"></p>
+            </div>
+        </section>
+
+        <section id="project-analysis" class="mb-16">
+             <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold section-title">Phân Tích Sâu Theo Dự Án</h2>
+                <p class="text-md text-slate-600 max-w-2xl mx-auto mt-2"><ul>
+  <div style="text-align: left;">
+  <ul>
+    <li>🌟 <strong>Các dự án có số lượng thử nghiệm cao nhất:</strong></li>
+    <li>🌟 <strong>iG_Bus_Out</strong> dẫn đầu với <strong>54</strong> thử nghiệm.</li>
+    <li>🌟 <strong>iG_Screwdom_3D</strong> theo sau với <strong>41</strong> thử nghiệm, <strong>iG_Screwdom_3D_IOS</strong> có <strong>30</strong> thử nghiệm. Trong đó <strong>30%</strong> là các thực nghiệm ≥ <strong>14</strong> ngày.</li>
+    <li>🌟 <strong>iG_Royal_Rescue</strong> có <strong>25</strong> thử nghiệm.</li>
+    <li>🌟 <strong>iG_Goods_Jam</strong> có <strong>19</strong> thử nghiệm.</li>
+  </ul>
+  <ul>
+    <li>🌟 <strong>Hơn 80% thực nghiệm theo 2 variant, các dự án Bus và Dom gần đây xuất hiện các thực nghiệm 3 và nhiều hơn 4 variant</strong></li>
+    <li>🌟 Thời gian trung bình cho các thực nghiệm thường là 3-14 ngày, dự án Dom xuất hiện nhiều thực nghiệm kéo dài từ 15 đến hơn 30 ngày</li>
+
+  </ul>
+
+</div>
+
+</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md table-container">
+                <table class="data-table" id="projectDataTable">
+                    <thead>
+                        <tr>
+                            <th data-sort-by="project_id">Dự án</th>
+                            <th data-sort-by="experiment">Thử nghiệm</th>
+                            <th data-sort-by="avg_dau">Avg.DAU</th>
+                            <th data-sort-by="avg_duration">Avg.Duration</th>
+                            <th data-sort-by="duration_0_2">0-2 Ngày</th>
+                            <th data-sort-by="duration_3_7">3-7 Ngày</th>
+                            <th data-sort-by="duration_8_14">8-14 Ngày</th>
+                            <th data-sort-by="duration_15_30">15-30 Ngày</th>
+                            <th data-sort-by="duration_ge_30">>= 30 Ngày</th>
+                            <th data-sort-by="variant_2">2 Biến thể</th>
+                            <th data-sort-by="variant_3">3 Biến thể</th>
+                            <th data-sort-by="variant_ge_4">> 4 Biến thể</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="methodology" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold mb-4 section-title">Phân Phối Thời Gian Thử Nghiệm</h3>
+                <p class="text-slate-600 mb-6"><ul>
+
+  <li>⭐ Khoảng thời gian thử nghiệm phổ biến nhất là <strong>3–7 ngày</strong>, chiếm <strong>47%</strong> tổng số thử nghiệm (<strong>127</strong> thực nghiệm).</li>
+  <li>⭐ Tiếp theo là <strong>8–14 ngày</strong>, chiếm <strong>27.27%</strong> (<strong>75</strong> thực nghiệm).</li>
+  <li>⭐ <strong>0–2 ngày</strong> chiếm <strong>13%</strong> (<strong>37</strong> thử nghiệm).</li>
+  <li>⭐ <strong>15–30 ngày</strong> chiếm <strong>7.4%</strong> (<strong>20</strong> thử nghiệm).</li>
+  <li>⭐ <strong>>= 30 ngày</strong> chiếm <strong>3.7%</strong> (<strong>10</strong> thử nghiệm).</li>
+</ul>
+</p>
+                <div class="chart-container">
+                    <canvas id="durationDistributionChart"></canvas>
+                </div>
+            </div>
+             <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold mb-4 section-title">Số variant của thực nghiệm</h3>
+                 <p class="text-slate-600 mb-6">Đại đa số thử nghiệm (84%) là các so sánh A/B đơn giản, phù hợp với thực tiễn tốt nhất để cô lập tác động và đưa ra kết luận rõ ràng.</p>
+                <div class="chart-container">
+                    <canvas id="variantsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="frequency-colap-performance" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 section-title">Tần Suất Thực Nghiệm & Tỉ Lệ Chạy Đồng Thời</h2>
+                <p class="text-md text-slate-600 mb-6"><ul>
+  <li>⭐ Trung bình thời gian giữa các thực nghiệm là <strong>6–7 ngày</strong>.</li>
+  <li>⭐ Các dự án như <strong>ScrewDom</strong> và <strong>Bus Out</strong> có tần suất A/B testing ngắn và đều đặn nhất.</li>
+  <li>⭐ Dự án <strong>ScrewDom</strong> có tỉ lệ ngày thực nghiệm chạy đồng thời nhiều A/B với <strong>87%</strong>, trong đó <strong>Bus Out</strong> là <strong>50%</strong>.</li>
+  <li>⭐ Tỉ lệ này cao ở các dự án thử nghiệm nhiều và tần suất dày đặc.</li>
+</ul>
+</p>
+                <div class="table-container">
+                    <table class="data-table" id="frequencyColapTable">
+                        <thead>
+                            <tr>
+                                <th data-sort-by="project_id">Dự án</th>
+                                <th data-sort-by="total_exp">Tổng Thử Nghiệm</th>
+                                <th data-sort-by="frequency_days">Tần suất (Ngày)</th>
+                                <th data-sort-by="ab_days">Tổng Ngày AB</th>
+                                <th data-sort-by="colap_rate">Tỉ lệ Colap (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 section-title">Hiệu Suất Dự Án Theo Thử Nghiệm</h2>
+                <p class="text-md text-slate-600 mb-6"><ul>
+  <li>⭐ <strong>6%</strong> tỉ lệ thử nghiệm thắng có ý nghĩa thống kê và <strong>26%</strong> tỉ lệ thắng uplift LTV từ <strong>5%</strong> trở lên.</li>
+  <li>⭐ Tỉ lệ thực nghiệm win significant ở các dự án IOS cao hơn Android, đặc biệt dự án iG_Royal_IOS có tỉ lệ win cao nhất với <strong>40%</strong> significant và <strong>60%</strong> win uplift.</li>
+  <li>⭐ Sự chênh lệch về tỉ lệ win theo significant và win theo uplift là rất lớn khoảng <strong>20%</strong>. Nên cân nhắc trong việc đánh giá thực nghiệm là win chặt hay chỉ là sự uplift ngẫu nhiên doanh thu.</li>
+</ul>
+
+</p>
+                <div class="table-container">
+                    <table class="data-table" id="projectPerformanceTable">
+                        <thead>
+                            <tr>
+                                <th data-sort-by="project_id">Dự án</th>
+                                <th data-sort-by="experiment_count">Thử nghiệm</th>
+                                <th data-sort-by="win_significant_rate">% Win Significant</th>
+                                <th data-sort-by="avg_significant_uplift">Avg Significant Uplift</th>
+                                <th data-sort-by="win_uplift_5_rate">% Win uplift > 5%</th>
+                                <th data-sort-by="avg_uplift">Avg Uplift</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance-charts" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold mb-4 section-title">Hiệu Suất A/B Testing Theo Số Lượng Biến Thể</h3>
+                <p class="text-slate-600 mb-6">Biểu đồ này so sánh tỷ lệ thử nghiệm thắng có ý nghĩa thống kê và tỷ lệ thử nghiệm có uplift doanh thu LTV trên 5%, được phân loại theo số lượng biến thể được sử dụng trong mỗi thử nghiệm.</p>
+                <div class="chart-container" style="height: 250px; max-height: 300px;">
+                    <canvas id="performanceByVariantChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold mb-4 section-title">Hiệu Suất Thử Nghiệm Theo Thời Gian</h3>
+                <p class="text-slate-600 mb-6"><ul>
+  <li>🌟 <strong>Thử nghiệm cần ít nhất 3 ngày</strong> để có dữ liệu đủ tốt.</li>
+  <li>🌟 <strong>Nên nhắm tới thời lượng 7–14 ngày</strong> để đạt cân bằng giữa tốc độ và độ tin cậy thống kê.</li>
+  <li>🌟 <strong>Các thử nghiệm quá ngắn hoặc quá dài</strong> không cải thiện xác suất win, thậm chí có thể gây nhiễu.</li>
+</ul>
+</p>
+                <div class="chart-container" style="height: 250px; max-height: 300px;">
+                    <canvas id="performanceByDurationChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations">
+             <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold section-title">Kết Luận & Đề Xuất Hành Động</h2>
+                <p class="text-md text-slate-600 max-w-2xl mx-auto mt-2">Dựa trên dữ liệu, đây là những đề xuất nhằm nâng cao hiệu quả và độ tin cậy của quy trình A/B testing trong tương lai.</p>
+            </div>
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+  <div style="background-color: #e6f7ff; border: 1px solid #ddd; padding: 1rem; border-radius: 10px;">
+    💡 <strong>Thời gian cho các thực nghiệm nên là từ 6–7 ngày.</strong>
+  </div>
+  <div style="background-color: #fffbe6; border: 1px solid #ddd; padding: 1rem; border-radius: 10px;">
+    💡 <strong>Có sự chênh lệch mạnh về tỉ lệ win significant và win theo uplift.</strong> Cần cẩn trọng đánh giá và apply các thực nghiệm.
+  </div>
+  <div style="background-color: #f6ffed; border: 1px solid #ddd; padding: 1rem; border-radius: 10px;">
+    💡 <strong>Chỉ nên test từ 2–3 biến thể</strong> để tránh làm tăng xác suất quyết định sai.
+  </div>
+  <div style="background-color: #fff0f6; border: 1px solid #ddd; padding: 1rem; border-radius: 10px;">
+    💡 <strong>Giảm thiểu việc testing colap các thực nghiệm</strong> để tránh việc tác động lẫn nhau và đánh giá nhầm.
+  </div>
+</div>
+
+
+            </div>
+        </section>
+
+        <footer class="text-center mt-16 pt-8 border-t border-slate-300">
+            <p class="text-slate-500">Báo cáo tương tác được tạo vào ngày 25 tháng 6 năm 2025.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const sharedTooltipPlugin = {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            let label = item.chart.data.labels[item.dataIndex];
+                            if (Array.isArray(label)) {
+                              return label.join(' ');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            };
+
+            const projectData = [
+                { project_id: 'iG_Bus_Out', experiment: 54, avg_dau: '34,559', avg_duration: 5, duration_0_2: 13, duration_3_7: 31, duration_8_14: 10, duration_15_30: 0, duration_ge_30: 0, variant_2: 46, variant_3: 6, variant_ge_4: 2 },
+{ project_id: 'iG_Screwdom_3D', experiment: 41, avg_dau: '120,750', avg_duration: 12, duration_0_2: 5, duration_3_7: 12, duration_8_14: 13, duration_15_30: 8, duration_ge_30: 3, variant_2: 37, variant_3: 4, variant_ge_4: 0 },
+{ project_id: 'iG_Screwdom_3D_IOS', experiment: 30, avg_dau: '107,109', avg_duration: 15, duration_0_2: 4, duration_3_7: 9, duration_8_14: 8, duration_15_30: 5, duration_ge_30: 4, variant_2: 25, variant_3: 5, variant_ge_4: 0 },
+{ project_id: 'iG_Royal_Rescue', experiment: 25, avg_dau: '2,783', avg_duration: 5, duration_0_2: 1, duration_3_7: 19, duration_8_14: 5, duration_15_30: 0, duration_ge_30: 0, variant_2: 20, variant_3: 4, variant_ge_4: 1 },
+{ project_id: 'iG_Goods_Jam', experiment: 19, avg_dau: '3,737', avg_duration: 7, duration_0_2: 1, duration_3_7: 9, duration_8_14: 9, duration_15_30: 0, duration_ge_30: 0, variant_2: 13, variant_3: 6, variant_ge_4: 0 },
+{ project_id: 'iG_Bus_Out_IOS', experiment: 18, avg_dau: '28,242', avg_duration: 6, duration_0_2: 2, duration_3_7: 9, duration_8_14: 7, duration_15_30: 0, duration_ge_30: 0, variant_2: 15, variant_3: 1, variant_ge_4: 2 },
+{ project_id: 'iG_Wood_Away', experiment: 14, avg_dau: '23,206', avg_duration: 7, duration_0_2: 4, duration_3_7: 5, duration_8_14: 3, duration_15_30: 2, duration_ge_30: 0, variant_2: 12, variant_3: 1, variant_ge_4: 0 },
+{ project_id: 'iG_Hole_Eats_All', experiment: 12, avg_dau: '2,504', avg_duration: 7, duration_0_2: 1, duration_3_7: 8, duration_8_14: 2, duration_15_30: 1, duration_ge_30: 0, variant_2: 10, variant_3: 2, variant_ge_4: 0 },
+{ project_id: 'iG_Wood_Away_IOS', experiment: 11, avg_dau: '7,425', avg_duration: 8, duration_0_2: 0, duration_3_7: 4, duration_8_14: 6, duration_15_30: 1, duration_ge_30: 0, variant_2: 11, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Block_Buster', experiment: 8, avg_dau: '3,214', avg_duration: 4, duration_0_2: 2, duration_3_7: 6, duration_8_14: 0, duration_15_30: 0, duration_ge_30: 0, variant_2: 6, variant_3: 1, variant_ge_4: 0 },
+{ project_id: 'iG_Screw_Cat_Puzzle', experiment: 6, avg_dau: '3,381', avg_duration: 14, duration_0_2: 0, duration_3_7: 3, duration_8_14: 2, duration_15_30: 0, duration_ge_30: 1, variant_2: 5, variant_3: 1, variant_ge_4: 0 },
+{ project_id: 'iG_Brick_Out', experiment: 6, avg_dau: '2,694', avg_duration: 5, duration_0_2: 1, duration_3_7: 4, duration_8_14: 1, duration_15_30: 0, duration_ge_30: 0, variant_2: 4, variant_3: 0, variant_ge_4: 2 },
+{ project_id: 'iG_Royal_Rescue_IOS', experiment: 5, avg_dau: '1,564', avg_duration: 3, duration_0_2: 2, duration_3_7: 3, duration_8_14: 0, duration_15_30: 0, duration_ge_30: 0, variant_2: 0, variant_3: 3, variant_ge_4: 2 },
+{ project_id: 'iG_Screw_Puzzle', experiment: 4, avg_dau: '74,610', avg_duration: 9, duration_0_2: 1, duration_3_7: 0, duration_8_14: 2, duration_15_30: 1, duration_ge_30: 0, variant_2: 4, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Screw_Jam', experiment: 4, avg_dau: '24,401', avg_duration: 20, duration_0_2: 0, duration_3_7: 0, duration_8_14: 3, duration_15_30: 0, duration_ge_30: 1, variant_2: 4, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Screw_Jam_IOS', experiment: 3, avg_dau: '38,127', avg_duration: 28, duration_0_2: 0, duration_3_7: 1, duration_8_14: 1, duration_15_30: 0, duration_ge_30: 1, variant_2: 3, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Cannon_Heroes_IOS', experiment: 3, avg_dau: '705', avg_duration: 6, duration_0_2: 0, duration_3_7: 3, duration_8_14: 0, duration_15_30: 0, duration_ge_30: 0, variant_2: 3, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Moto_GP', experiment: 2, avg_dau: '33,881', avg_duration: 16, duration_0_2: 0, duration_3_7: 1, duration_8_14: 0, duration_15_30: 1, duration_ge_30: 0, variant_2: 2, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'Dino_Car_Master', experiment: 2, avg_dau: '184,798', avg_duration: 9, duration_0_2: 0, duration_3_7: 0, duration_8_14: 2, duration_15_30: 0, duration_ge_30: 0, variant_2: 2, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Screw_Puzzle_IOS', experiment: 1, avg_dau: '39,515', avg_duration: 17, duration_0_2: 0, duration_3_7: 0, duration_8_14: 0, duration_15_30: 1, duration_ge_30: 0, variant_2: 1, variant_3: 0, variant_ge_4: 0 },
+{ project_id: 'iG_Delete_One_Part', experiment: 1, avg_dau: '111,169', avg_duration: 11, duration_0_2: 0, duration_3_7: 0, duration_8_14: 1, duration_15_30: 0, duration_ge_30: 0, variant_2: 1, variant_3: 0, variant_ge_4: 0 }
+
+            ];
+
+            const frequencyColapData = [
+                { project_id: 'iG_Bus_Out', total_exp: 45, frequency_days: 4, ab_days: 147, colap_rate: 53.74 },
+                { project_id: 'iG_Screwdom_3D', total_exp: 34, frequency_days: 5, ab_days: 129, colap_rate: 87.60 },
+                { project_id: 'iG_Screwdom_3D_IOS', total_exp: 24, frequency_days: 6, ab_days: 138, colap_rate: 87.68 },
+                { project_id: 'iG_Royal_Rescue', total_exp: 19, frequency_days: 4, ab_days: 73, colap_rate: 49.32 },
+                { project_id: 'iG_Bus_Out_IOS', total_exp: 15, frequency_days: 11, ab_days: 84, colap_rate: 34.52 },
+                { project_id: 'iG_Goods_Jam', total_exp: 15, frequency_days: 8, ab_days: 94, colap_rate: 20.21 },
+                { project_id: 'iG_Wood_Away', total_exp: 13, frequency_days: 5, ab_days: 80, colap_rate: 22.50 },
+                { project_id: 'iG_Wood_Away_IOS', total_exp: 10, frequency_days: 6, ab_days: 50, colap_rate: 52.00 },
+                { project_id: 'iG_Block_Buster', total_exp: 7, frequency_days: 4, ab_days: 52, colap_rate: 44.23 },
+                { project_id: 'iG_Hole_Eats_All', total_exp: 7, frequency_days: 6, ab_days: 27, colap_rate: 11.11 },
+                { project_id: 'iG_Brick_Out', total_exp: 5, frequency_days: 5, ab_days: 86, colap_rate: 0.00 },
+                { project_id: 'iG_Screw_Cat_Puzzle', total_exp: 5, frequency_days: 17, ab_days: 27, colap_rate: 11.11 },
+                { project_id: 'iG_Royal_Rescue_IOS', total_exp: 4, frequency_days: 6, ab_days: 17, colap_rate: 0.00 },
+                { project_id: 'iG_Screw_Puzzle', total_exp: 3, frequency_days: 16, ab_days: 35, colap_rate: 2.86 },
+                { project_id: 'iG_Screw_Jam', total_exp: 3, frequency_days: 40, ab_days: 78, colap_rate: 0.00 },
+                { project_id: 'iG_Screw_Jam_IOS', total_exp: 2, frequency_days: 65, ab_days: 84, colap_rate: 0.00 },
+                { project_id: 'iG_Cannon_Heroes_IOS', total_exp: 2, frequency_days: 15, ab_days: 18, colap_rate: 0.00 },
+                { project_id: 'iG_Moto_GP', total_exp: 1, frequency_days: 4, ab_days: 30, colap_rate: 3.33 },
+                { project_id: 'Dino_Car_Master', total_exp: 1, frequency_days: 11, ab_days: 18, colap_rate: 0.00 }
+            ];
+
+            // New data for Project Performance Table
+            const projectPerformanceData = [
+                { project_id: 'iG_Bus_Out', experiment_count: 48, win_significant_rate: '4%', avg_significant_uplift: '29', win_uplift_5_rate: '25%', avg_uplift: '15' },
+                { project_id: 'iG_Screwdom_3D', experiment_count: 41, win_significant_rate: '2%', avg_significant_uplift: '16', win_uplift_5_rate: '20%', avg_uplift: '35' },
+                { project_id: 'iG_Screwdom_3D_IOS', experiment_count: 30, win_significant_rate: '7%', avg_significant_uplift: '7', win_uplift_5_rate: '20%', avg_uplift: '7' },
+                { project_id: 'iG_Royal_Rescue', experiment_count: 23, win_significant_rate: '4%', avg_significant_uplift: '29', win_uplift_5_rate: '30%', avg_uplift: '27' },
+                { project_id: 'iG_Goods_Jam', experiment_count: 19, win_significant_rate: '5%', avg_significant_uplift: '67', win_uplift_5_rate: '16%', avg_uplift: '41' },
+                { project_id: 'iG_Bus_Out_IOS', experiment_count: 16, win_significant_rate: '6%', avg_significant_uplift: '19', win_uplift_5_rate: '25%', avg_uplift: '19' },
+                { project_id: 'iG_Hole_Eats_All', experiment_count: 12, win_significant_rate: '8%', avg_significant_uplift: '44', win_uplift_5_rate: '58%', avg_uplift: '33' },
+                { project_id: 'iG_Wood_Away_IOS', experiment_count: 10, win_significant_rate: '20%', avg_significant_uplift: '26', win_uplift_5_rate: '50%', avg_uplift: '19' },
+                { project_id: 'iG_Wood_Away', experiment_count: 10, win_significant_rate: '0%', avg_significant_uplift: '-', win_uplift_5_rate: '20%', avg_uplift: '13' },
+                { project_id: 'iG_Block_Buster', experiment_count: 7, win_significant_rate: '0%', avg_significant_uplift: '-', win_uplift_5_rate: '29%', avg_uplift: '16' },
+                { project_id: 'iG_Screw_Cat_Puzzle', experiment_count: 6, win_significant_rate: '0%', avg_significant_uplift: '-', win_uplift_5_rate: '50%', avg_uplift: '14' },
+                { project_id: 'iG_Brick_Out', experiment_count: 6, win_significant_rate: '0%', avg_significant_uplift: '-', win_uplift_5_rate: '0%', avg_uplift: '-' },
+                { project_id: 'iG_Royal_Rescue_IOS', experiment_count: 5, win_significant_rate: '40%', avg_significant_uplift: '44', win_uplift_5_rate: '60%', avg_uplift: '45' },
+                { project_id: 'iG_Screw_Jam', experiment_count: 4, win_significant_rate: '50%', avg_significant_uplift: '14', win_uplift_5_rate: '75%', avg_uplift: '11' },
+                { project_id: 'iG_Screw_Puzzle', experiment_count: 4, win_significant_rate: '0%', avg_significant_uplift: '-', win_uplift_5_rate: '0%', avg_uplift: '-' },
+                { project_id: 'iG_Screw_Jam_IOS', experiment_count: 3, win_significant_rate: '33%', avg_significant_uplift: '10', win_uplift_5_rate: '33%', avg_uplift: '10' }
+            ];
+
+
+            // Chart data for Performance by Variant Count
+            const performanceByVariantData = {
+                labels: ["2", "3", "4", "5", "6"],
+                winSignificant: [6, 9, 20, 0, 0],
+                winUplift: [25, 35, 20, 67, 0]
+            };
+
+            // Chart data for Performance by Duration Group
+            const performanceByDurationData = {
+                labels: ["0-2 Ngày", "3-7 Ngày", "8-14 Ngày", "15-30 Ngày", ">= 30 Ngày"],
+                winSignificant: [0, 6, 10, 10, 0],
+                winUplift: [0, 34, 30, 15, 10]
+            };
+
+
+            function populateTable(data, tableId, headers) {
+                const tableBody = document.querySelector(`#${tableId} tbody`);
+                if (!tableBody) return; // Add null check for tbody
+                tableBody.innerHTML = ''; // Clear existing rows
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    headers.forEach(headerKey => {
+                        const td = document.createElement('td');
+                        // Special formatting for percentage and DAU
+                        if (headerKey.includes('rate') || headerKey === 'avg_significant_uplift' || headerKey === 'avg_uplift') {
+                            td.textContent = row[headerKey] !== undefined && row[headerKey] !== null ? `${row[headerKey]}` : '-'; // Handle '-' for uplift
+                        } else if (headerKey === 'avg_dau') {
+                            td.textContent = row[headerKey];
+                        }
+                        else {
+                            td.textContent = row[headerKey];
+                        }
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            function getCellValue(tr, idx) {
+                const cell = tr.children[idx];
+                let value = cell.textContent || cell.innerText;
+                // Remove percentage sign, commas, and handle '-' for numeric conversion
+                value = value.replace('%', '').replace(/,/g, '');
+                if (value === '-') return -Infinity; // Treat '-' as very small for sorting purposes
+                if (!isNaN(parseFloat(value))) {
+                    return parseFloat(value);
+                }
+                return value.toLowerCase();
+            }
+
+            function compare(idx, asc) {
+                return function (a, b) {
+                    const v1 = getCellValue(asc ? a : b, idx);
+                    const v2 = getCellValue(asc ? b : a, idx);
+                    if (typeof v1 === 'number' && typeof v2 === 'number') {
+                        return v1 - v2;
+                    }
+                    return v1.toString().localeCompare(v2.toString(), undefined, { numeric: true, sensitivity: 'base' });
+                };
+            }
+
+            function addSortListeners(tableId) {
+                const tableHeaders = document.querySelectorAll(`#${tableId} th`);
+                if (!tableHeaders || tableHeaders.length === 0) return; // Add null check for tableHeaders
+                tableHeaders.forEach((header, index) => {
+                    header.addEventListener('click', () => {
+                        const table = header.closest('table');
+                        const tbody = table.querySelector('tbody');
+                        Array.from(tbody.querySelectorAll('tr'))
+                            .sort(compare(index, header.classList.contains('asc')))
+                            .forEach(tr => tbody.appendChild(tr));
+
+                        document.querySelectorAll(`#${tableId} th`).forEach(th => {
+                            th.classList.remove('asc', 'desc');
+                        });
+                        if (header.classList.contains('asc')) {
+                            header.classList.remove('asc');
+                            header.classList.add('desc');
+                        } else {
+                            header.classList.remove('desc');
+                            header.classList.add('asc');
+                        }
+                    });
+                });
+            }
+
+            // Function to get numeric value, handling '%' and '-'
+            function getNumericValue(valueString) {
+                if (valueString === '-' || valueString === null || valueString === undefined) return -Infinity;
+                const cleanedValue = String(valueString).replace('%', '').replace(/,/g, '');
+                const num = parseFloat(cleanedValue);
+                return isNaN(num) ? -Infinity : num;
+            }
+
+            // Function to calculate color for heatmap
+            function getHeatmapColor(value, min, max, startColorRgb, endColorRgb) {
+                if (value === 0) {
+                    return 'white'; // If value is 0, make it white
+                }
+                if (value === -Infinity || value === null || value === undefined || isNaN(value)) {
+                    return 'transparent'; // No heatmap for non-numeric or '-' values
+                }
+                if (min === max) return `rgba(${endColorRgb.join(',')}, 0.5)`; // If all values are the same, use a medium intensity
+
+                const ratio = (value - min) / (max - min);
+                const r = startColorRgb[0] + ratio * (endColorRgb[0] - startColorRgb[0]);
+                const g = startColorRgb[1] + ratio * (endColorRgb[1] - startColorRgb[1]);
+                const b = startColorRgb[2] + ratio * (endColorRgb[2] - startColorRgb[2]);
+                return `rgba(${r},${g},${b},0.6)`; // Use a fixed alpha for consistency
+            }
+
+            // Function to apply heatmaps to a specific table
+            function applyHeatmap(tableId, rawDataArray, columnConfigs) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+
+                const headers = Array.from(table.querySelectorAll('th')).map(th => th.dataset.sortBy);
+                const tbodyRows = Array.from(table.querySelectorAll('tbody tr'));
+
+                columnConfigs.forEach(config => {
+                    let valuesToMap = [];
+                    rawDataArray.forEach(row => { // Use rawDataArray to get original values
+                        config.colKeys.forEach(key => {
+                            let val = getNumericValue(String(row[key])); // Process each value
+                            if (typeof val === 'number' && val !== -Infinity && val !== 0) { // Exclude 0 and -Infinity for min/max range calculation
+                                valuesToMap.push(val);
+                            }
+                        });
+                    });
+
+                    const min = valuesToMap.length > 0 ? Math.min(...valuesToMap) : 0;
+                    const max = valuesToMap.length > 0 ? Math.max(...valuesToMap) : 0;
+
+                    tbodyRows.forEach((rowElement, rowIndex) => {
+                        const rowData = rawDataArray[rowIndex]; // Get original row data
+                        config.colKeys.forEach(key => {
+                            const colIdx = headers.indexOf(key);
+                            if (colIdx !== -1) {
+                                const cell = rowElement.children[colIdx];
+                                let value = getNumericValue(String(rowData[key])); // Get and process the value for this cell
+                                cell.style.backgroundColor = getHeatmapColor(
+                                    value,
+                                    min, max,
+                                    config.colorStart, config.colorEnd
+                                );
+                            }
+                        });
+                    });
+                });
+            }
+
+
+            // Populate Project Data Table
+            populateTable(projectData, 'projectDataTable', ['project_id', 'experiment', 'avg_dau', 'avg_duration', 'duration_0_2', 'duration_3_7', 'duration_8_14', 'duration_15_30', 'duration_ge_30', 'variant_2', 'variant_3', 'variant_ge_4']);
+            addSortListeners('projectDataTable');
+
+            const projectHeatmapConfig = [
+                {
+                    colKeys: ['experiment'],
+                    colorStart: [190, 190, 220], // Light blue-purple
+                    colorEnd: [88, 80, 141] // accent-color-1
+                },
+                {
+                    colKeys: ['duration_0_2', 'duration_3_7', 'duration_8_14', 'duration_15_30', 'duration_ge_30'],
+                    colorStart: [255, 200, 200], // Light red
+                    colorEnd: [255, 99, 132] // accent-color-3
+                },
+                {
+                    colKeys: ['variant_2', 'variant_3', 'variant_ge_4'],
+                    colorStart: [255, 230, 180], // Light orange
+                    colorEnd: [255, 166, 0] // accent-color-4
+                }
+            ];
+            applyHeatmap('projectDataTable', projectData, projectHeatmapConfig);
+
+            // Populate Frequency Colap Table
+            populateTable(frequencyColapData, 'frequencyColapTable', ['project_id', 'total_exp', 'frequency_days', 'ab_days', 'colap_rate']);
+            addSortListeners('frequencyColapTable');
+
+            const frequencyColapHeatmapConfig = [
+                {
+                    colKeys: ['frequency_days', 'colap_rate'],
+                    colorStart: [200, 220, 255], // Light blue
+                    colorEnd: [60, 150, 255] // A darker blue
+                }
+            ];
+            applyHeatmap('frequencyColapTable', frequencyColapData, frequencyColapHeatmapConfig);
+
+            // Populate Project Performance Table
+            populateTable(projectPerformanceData, 'projectPerformanceTable', ['project_id', 'experiment_count', 'win_significant_rate', 'avg_significant_uplift', 'win_uplift_5_rate', 'avg_uplift']);
+            addSortListeners('projectPerformanceTable');
+
+            const projectPerformanceHeatmapConfig = [
+                {
+                    colKeys: ['win_significant_rate', 'avg_significant_uplift', 'win_uplift_5_rate', 'avg_uplift'],
+                    colorStart: [200, 255, 200], // Light green
+                    colorEnd: [0, 150, 0] // Darker green
+                }
+            ];
+            applyHeatmap('projectPerformanceTable', projectPerformanceData, projectPerformanceHeatmapConfig);
+
+
+            const durationCanvas = document.getElementById('durationDistributionChart');
+            if (durationCanvas) {
+                const durationCtx = durationCanvas.getContext('2d');
+                new Chart(durationCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0-2 ngày', '3-7 ngày', '8-14 ngày', '15-30 ngày', '>= 30 ngày'],
+                        datasets: [{
+                            label: 'Số Lượng Thử Nghiệm',
+                            data: [37, 127, 75, 20, 10],
+                            backgroundColor: ['#58508d', '#bc5090', '#ff6361', '#ffa600', '#3c5a88'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: sharedTooltipPlugin.tooltip
+                        }
+                    }
+                });
+            }
+
+            const variantsCanvas = document.getElementById('variantsChart');
+            if (variantsCanvas) {
+                const variantsCtx = variantsCanvas.getContext('2d');
+                new Chart(variantsCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['2 Biến thể', '3 Biến thể', '>= 4 Biến thể'],
+                        datasets: [{
+                            label: 'Số Lượng Thử Nghiệm',
+                            data: [224, 34, 9],
+                            backgroundColor: ['#58508d', '#bc5090', '#ff6361'],
+                            borderColor: '#ffffff',
+                            borderWidth: 3,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: sharedTooltipPlugin.tooltip
+                        }
+                    }
+                });
+            }
+
+            const performanceByVariantCanvas = document.getElementById('performanceByVariantChart');
+            if (performanceByVariantCanvas) {
+                const performanceByVariantCtx = performanceByVariantCanvas.getContext('2d');
+                new Chart(performanceByVariantCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: performanceByVariantData.labels,
+                        datasets: [
+                            {
+                                label: 'Tỉ lệ Win Significant',
+                                data: performanceByVariantData.winSignificant,
+                                backgroundColor: '#58508d',
+                                borderColor: '#58508d',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            },
+                            {
+                                label: 'Tỉ lệ Win Uplift >= 5%',
+                                data: performanceByVariantData.winUplift,
+                                backgroundColor: '#ff6361',
+                                borderColor: '#ff6361',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Tỉ lệ (%)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                },
+                                grid: {
+                                    color: '#e2e8f0'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: sharedTooltipPlugin.tooltip
+                        }
+                    }
+                });
+            }
+
+            const performanceByDurationCanvas = document.getElementById('performanceByDurationChart');
+            if (performanceByDurationCanvas) {
+                const performanceByDurationCtx = performanceByDurationCanvas.getContext('2d');
+                new Chart(performanceByDurationCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: performanceByDurationData.labels.map(label => {
+                            if (label.length > 16) {
+                                return label.split(' ').reduce((acc, word) => {
+                                    if (acc.length === 0 || acc[acc.length - 1].length + word.length + 1 > 16) {
+                                        acc.push(word);
+                                    } else {
+                                        acc[acc.length - 1] += ' ' + word;
+                                    }
+                                    return acc;
+                                }, []);
+                            }
+                            return label;
+                        }),
+                        datasets: [
+                            {
+                                label: 'Tỉ lệ Win Significant',
+                                data: performanceByDurationData.winSignificant,
+                                backgroundColor: '#58508d',
+                                borderColor: '#58508d',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            },
+                            {
+                                label: 'Tỉ lệ Win Uplift >= 5%',
+                                data: performanceByDurationData.winUplift,
+                                backgroundColor: '#ff6361',
+                                borderColor: '#ff6361',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Tỉ lệ (%)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                },
+                                grid: {
+                                    color: '#e2e8f0'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            tooltip: sharedTooltipPlugin.tooltip
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
